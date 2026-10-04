@@ -1,0 +1,229 @@
+openapi: 3.0.0
+info:
+  title: PlaceMux API Documentation
+  description: Placement & Recruitment Platform REST API powered by Express.js & PostgreSQL
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+    description: Development Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, role]
+              properties:
+                email:
+                  type: string
+                  example: student@placemux.com
+                password:
+                  type: string
+                  example: secret123
+                role:
+                  type: string
+                  enum: [STUDENT, COMPANY, COLLEGE, ADMIN]
+                  example: STUDENT
+                firstName:
+                  type: string
+                  example: Alex
+                lastName:
+                  type: string
+                  example: Johnson
+      responses:
+        201:
+          description: User registered successfully
+        400:
+          description: Validation error or duplicate email
+
+  /auth/login:
+    post:
+      summary: Authenticate user & receive JWT tokens
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: student@placemux.com
+                password:
+                  type: string
+                  example: secret123
+      responses:
+        200:
+          description: Login successful
+        401:
+          description: Invalid email or password
+
+  /auth/refresh-token:
+    post:
+      summary: Refresh JWT access token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        200:
+          description: Tokens refreshed successfully
+        401:
+          description: Invalid or expired refresh token
+
+  /auth/logout:
+    post:
+      summary: Invalidate refresh token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        200:
+          description: Logged out successfully
+
+  /auth/me:
+    get:
+      summary: Get currently authenticated user profile
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Current user details
+        401:
+          description: Unauthorized
+
+  /students/profile:
+    get:
+      summary: Get student full profile
+      tags: [Student Module]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Student profile retrieved
+    put:
+      summary: Update student profile
+      tags: [Student Module]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phone:
+                  type: string
+                bio:
+                  type: string
+                cgpa:
+                  type: number
+                branch:
+                  type: string
+      responses:
+        200:
+          description: Student profile updated
+
+  /students/dashboard:
+    get:
+      summary: Get aggregated student dashboard metrics
+      tags: [Student Module]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Dashboard metrics retrieved
+
+  /ai/resume/analyze:
+    post:
+      summary: Analyze resume text/document using Python FastAPI AI service
+      tags: [AI Microservice Engine]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rawText]
+              properties:
+                rawText:
+                  type: string
+                  description: Extracted plain text of candidate resume
+                targetRole:
+                  type: string
+                  description: Optional target role for customized scoring
+      responses:
+        200:
+          description: Resume analysis, multi-dimensional score, and suggestions generated
+        400:
+          description: Resume text content too short
+
+  /ai/jobs/{jobId}/match:
+    post:
+      summary: Compute candidate-to-job match percentage using TF-IDF & Skill Jaccard algorithm
+      tags: [AI Microservice Engine]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentSkills:
+                  type: array
+                  items:
+                    type: string
+                resumeSkills:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Job compatibility score, matching skills, missing skills, and recommendations
+        404:
+          description: Job drive not found
+
